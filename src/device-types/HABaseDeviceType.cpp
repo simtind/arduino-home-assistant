@@ -9,26 +9,25 @@ HABaseDeviceType::HABaseDeviceType(
     const char* uniqueId
 ) :
     _componentName(componentName),
-    _uniqueId(uniqueId),
-    _name(nullptr),
-    _objectId(nullptr),
-    _serializer(nullptr),
-    _availability(AvailabilityDefault)
+    _uniqueId(uniqueId)
 {
-    if (mqtt()) {
-        mqtt()->addDeviceType(this);
-    }
+}
+
+HABaseDeviceType::HABaseDeviceType(
+    HADevice & device,
+    const __FlashStringHelper* componentName,
+    const char* uniqueId
+) : 
+    HABaseDeviceType(componentName, uniqueId),
+    _device(&device)
+{
+    _device->addDeviceType(this);
 }
 
 void HABaseDeviceType::setAvailability(bool online)
 {
     _availability = (online ? AvailabilityOnline : AvailabilityOffline);
     publishAvailability();
-}
-
-HAMqtt* HABaseDeviceType::mqtt()
-{
-    return HAMqtt::instance();
 }
 
 void HABaseDeviceType::subscribeTopic(
@@ -53,7 +52,7 @@ void HABaseDeviceType::subscribeTopic(
         return;
     }
 
-    HAMqtt::instance()->subscribe(fullTopic);
+    _device->mqtt()->subscribe(fullTopic);
 }
 
 void HABaseDeviceType::onMqttMessage(
@@ -97,9 +96,9 @@ void HABaseDeviceType::publishConfig()
             uniqueId()
         );
 
-        if (mqtt()->beginPublish(topic, dataLength, true)) {
+        if (_device->mqtt()->beginPublish(topic, dataLength, true)) {
             _serializer->flush();
-            mqtt()->endPublish();
+            _device->mqtt()->endPublish();
         }
     }
 
@@ -108,7 +107,7 @@ void HABaseDeviceType::publishConfig()
 
 void HABaseDeviceType::publishAvailability()
 {
-    const HADevice* device = mqtt()->getDevice();
+    const HADevice* device = _device->mqtt()->getDevice();
     if (
         !device ||
         device->isSharedAvailabilityEnabled() ||
@@ -192,14 +191,14 @@ bool HABaseDeviceType::publishOnDataTopic(
         return false;
     }
 
-    if (mqtt()->beginPublish(fullTopic, length, retained)) {
+    if (_device->mqtt()->beginPublish(fullTopic, length, retained)) {
         if (isProgmemData) {
-            mqtt()->writePayload(AHATOFSTR(payload));
+            _device->mqtt()->writePayload(AHATOFSTR(payload));
         } else {
-            mqtt()->writePayload(payload, length);
+            _device->mqtt()->writePayload(payload, length);
         }
 
-        return mqtt()->endPublish();
+        return _device->mqtt()->endPublish();
     }
 
     return false;

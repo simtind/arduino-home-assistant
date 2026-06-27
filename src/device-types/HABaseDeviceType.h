@@ -4,8 +4,8 @@
 #include <Arduino.h>
 #include "../ArduinoHADefines.h"
 
-class HAMqtt;
 class HASerializer;
+class HADevice;
 
 class HABaseDeviceType
 {
@@ -25,7 +25,22 @@ public:
     };
 
     /**
-     * Creates a new device type instance and registers it in the HAMqtt class.
+     * Creates a new device type instance and registers it in the HADevice class.
+     *
+     * @param componentName The name of the Home Assistant component (e.g. `binary_sensor`).
+     *                      You can find all available component names in the Home Assistant documentation.
+     *                      The component name needs to be stored in the flash memory.
+     * @param uniqueId The unique ID of the device type. It needs to be unique in a scope of the HADevice.
+     */
+    HABaseDeviceType(
+        HADevice & device,
+        const __FlashStringHelper* componentName,
+        const char* uniqueId
+    );
+
+    /**
+     * Creates a new device type instance but does not register it.
+     * Must be registered in a device through HADevice.addDeviceType().
      *
      * @param componentName The name of the Home Assistant component (e.g. `binary_sensor`).
      *                      You can find all available component names in the Home Assistant documentation.
@@ -36,6 +51,14 @@ public:
         const __FlashStringHelper* componentName,
         const char* uniqueId
     );
+
+    /**
+     * Sets the device pointer for default-constructed DeviceType instances.
+     *
+     * @param device The device to associate.
+     */
+    inline void setDevice(HADevice & device)
+        { _device = &device; }
 
     /**
      * Returns unique ID of the device type.
@@ -104,6 +127,13 @@ public:
      */
     virtual void setAvailability(bool online);
 
+    /** 
+     * Get the Mtt instnace for this device.
+     */
+    inline HADevice* device() const {
+        return _device;
+    }
+
 #ifdef ARDUINOHA_TEST
     inline HASerializer* getSerializer() const
         { return _serializer; }
@@ -113,10 +143,6 @@ public:
 #endif
 
 protected:
-    /**
-     * Returns instance of the HAMqtt class.
-     */
-    static HAMqtt* mqtt();
 
     /**
      * Subscribes to the given data topic.
@@ -220,16 +246,19 @@ protected:
     const __FlashStringHelper* const _componentName;
 
     /// The unique ID that was assigned via the constructor.
-    const char* _uniqueId;
+    const char* _uniqueId = nullptr;
 
     /// The name that was set using setName method. It can be nullptr.
-    const char* _name;
+    const char* _name = nullptr;
 
     /// The object ID that was set using setObjectId method. It can be nullptr.
-    const char* _objectId;
+    const char* _objectId = nullptr;
 
     /// HASerializer that belongs to this device type. It can be nullptr.
-    HASerializer* _serializer;
+    HASerializer* _serializer = nullptr;
+
+    /// Device that this devicetype belongs to. It can be nullptr.
+    HADevice* _device = nullptr;
 
 private:
     enum Availability {
@@ -239,8 +268,8 @@ private:
     };
 
     /// The current availability of this device type. AvailabilityDefault means that the initial availability was never set.
-    Availability _availability;
-    friend class HAMqtt;
+    Availability _availability = AvailabilityDefault;
+    friend class HADevice;
 };
 
 #endif
