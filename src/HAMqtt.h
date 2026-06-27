@@ -97,6 +97,14 @@ public:
     ~HAMqtt();
 
     /**
+     * Sets the device pointer for default-constructed HAMqtt instances.
+     *
+     * @param prefix The discovery topics' prefix.
+     */
+    inline void setDevice(HADevice * device)
+        { _device = device; }
+
+    /**
      * Sets the prefix of the Home Assistant discovery topics.
      * It needs to match the prefix set in the HA admin panel.
      * The default prefix is "homeassistant".

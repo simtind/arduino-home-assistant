@@ -60,6 +60,17 @@ bool HADevice::setUniqueId(const byte* uniqueId, const uint16_t length)
     return true;
 }
 
+bool HADevice::setUniqueId(const char* uniqueId)
+{
+    if (_uniqueId) {
+        return false; // unique ID cannot be changed at runtime once it's set
+    }
+
+    _uniqueId = uniqueId;
+    _serializer->set(AHATOFSTR(HADeviceIdentifiersProperty), _uniqueId);
+    return true;
+}
+
 void HADevice::setManufacturer(const char* manufacturer)
 {
     _serializer->set(AHATOFSTR(HADeviceManufacturerProperty), manufacturer);

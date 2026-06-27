@@ -118,6 +118,15 @@ public:
     bool setUniqueId(const byte* uniqueId, const uint16_t length);
 
     /**
+     * Sets the HADevice unique ID to the given string.
+     * Keep the unique ID short to save memory.
+     *
+     * @param uniqueId String with null terminator.
+     * @note The unique ID can be set only once (via constructor or using this method).
+     */
+    bool setUniqueId(const char* uniqueId);
+
+    /**
      * Sets the "manufacturer" property that's going to be displayed in the Home Assistant.
      *
      * @param manufacturer Any string. Keep it short to save the memory.
