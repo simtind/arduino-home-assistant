@@ -14,26 +14,25 @@
 #include "../device-types/HABaseDeviceType.h"
 
 uint16_t HASerializer::calculateConfigTopicLength(
-    HADevice * device,
     const __FlashStringHelper* componentName,
     const char* objectId
 )
 {
-    const HAMqtt* mqtt = device->mqtt();
-    if (
-        !componentName ||
-        !objectId ||
-        !mqtt ||
-        !mqtt->getDiscoveryPrefix() ||
-        !mqtt->getDevice()
-    ) {
+    const HADevice* device = _deviceType->device();
+    if (!device || !componentName || !objectId)
+    {
+        return 0;
+    }
+    HAMqtt* mqtt = device->mqtt();
+    if (!mqtt || !mqtt->getDiscoveryPrefix())
+    {
         return 0;
     }
 
     return
         strlen(mqtt->getDiscoveryPrefix()) + 1 + // prefix with slash
         strlen_P(AHAFROMFSTR(componentName)) + 1 + // component name with slash
-        strlen(mqtt->getDevice()->getUniqueId()) + 1 + // device ID with slash
+        strlen(device->getUniqueId()) + 1 + // device ID with slash
         strlen(objectId) + 1 + // object ID with slash
         strlen_P(HAConfigTopic) + 1; // including null terminator
 }
@@ -45,15 +44,14 @@ bool HASerializer::generateConfigTopic(
     const char* objectId
 )
 {
-    const HAMqtt* mqtt = HAMqtt::instance();
-    if (
-        !output ||
-        !componentName ||
-        !objectId ||
-        !mqtt ||
-        !mqtt->getDiscoveryPrefix() ||
-        !mqtt->getDevice()
-    ) {
+    const HADevice* device = _deviceType->device();
+    if (!device || !output || !componentName || !objectId)
+    {
+        return false;
+    }
+    HAMqtt* mqtt = device->mqtt();
+    if (!mqtt || !mqtt->getDiscoveryPrefix())
+    {
         return false;
     }
 
@@ -63,7 +61,7 @@ bool HASerializer::generateConfigTopic(
     strcat_P(output, AHAFROMFSTR(componentName));
     strcat_P(output, HASerializerSlash);
 
-    strcat(output, mqtt->getDevice()->getUniqueId());
+    strcat(output, device->getUniqueId());
     strcat_P(output, HASerializerSlash);
 
     strcat(output, objectId);
@@ -74,24 +72,24 @@ bool HASerializer::generateConfigTopic(
 }
 
 uint16_t HASerializer::calculateDataTopicLength(
-    HADevice * device,
     const char* objectId,
     const __FlashStringHelper* topic
 )
 {
-    const HAMqtt* mqtt = HAMqtt::instance();
-    if (
-        !topic ||
-        !mqtt ||
-        !mqtt->getDataPrefix() ||
-        !mqtt->getDevice()
-    ) {
+    const HADevice* device = _deviceType->device();
+    if (!device || !topic)
+    {
+        return 0;
+    }
+    HAMqtt* mqtt = device->mqtt();
+    if (!mqtt || !mqtt->getDataPrefix())
+    {
         return 0;
     }
 
     uint16_t size =
         strlen(mqtt->getDataPrefix()) + 1 + // prefix with slash
-        strlen(mqtt->getDevice()->getUniqueId()) + 1 + // device ID with slash
+        strlen(device->getUniqueId()) + 1 + // device ID with slash
         strlen_P(AHAFROMFSTR(topic));
 
     if (objectId) {
@@ -102,27 +100,26 @@ uint16_t HASerializer::calculateDataTopicLength(
 }
 
 bool HASerializer::generateDataTopic(
-    HADevice * device,
     char* output,
     const char* objectId,
     const __FlashStringHelper* topic
 )
 {
-    const HAMqtt* mqtt = HAMqtt::instance();
-    if (
-        !output ||
-        !topic ||
-        !mqtt ||
-        !mqtt->getDataPrefix() ||
-        !mqtt->getDevice()
-    ) {
+    const HADevice* device = _deviceType->device();
+    if (!device || !output || !topic)
+    {
+        return false;
+    }
+    HAMqtt* mqtt = device->mqtt();
+    if (!mqtt || !mqtt->getDataPrefix())
+    {
         return false;
     }
 
     strcpy(output, mqtt->getDataPrefix());
     strcat_P(output, HASerializerSlash);
 
-    strcat(output, mqtt->getDevice()->getUniqueId());
+    strcat(output, device->getUniqueId());
     strcat_P(output, HASerializerSlash);
 
     if (objectId) {
@@ -200,8 +197,9 @@ void HASerializer::set(const FlagType flag)
         entry->property = nullptr;
         entry->value = nullptr;
     } else if (flag == WithAvailability) {
-        HAMqtt* mqtt = _deviceType->device().mqtt();
-        const bool isSharedAvailability = mqtt->getDevice()->isSharedAvailabilityEnabled();
+        const HADevice* device = _deviceType->device();
+        HAMqtt* mqtt = device->mqtt();
+        const bool isSharedAvailability = device->isSharedAvailabilityEnabled();
         const bool isAvailabilityConfigured = _deviceType->isAvailabilityConfigured();
 
         if (!isSharedAvailability && !isAvailabilityConfigured) {
@@ -212,7 +210,7 @@ void HASerializer::set(const FlagType flag)
         entry->type = TopicEntryType;
         entry->property = AHATOFSTR(HAAvailabilityTopic);
         entry->value = isSharedAvailability
-            ? mqtt->getDevice()->getAvailabilityTopic()
+            ? device->getAvailabilityTopic()
             : nullptr;
     }
 }
@@ -258,8 +256,9 @@ uint16_t HASerializer::calculateSize() const
 
 bool HASerializer::flush() const
 {
-    HAMqtt* mqtt = _deviceType->device().mqtt();
-    if (!mqtt || (_deviceType && !mqtt->getDevice())) {
+    const HADevice* device = _deviceType->device();
+    HAMqtt* mqtt = device->mqtt();
+    if (!mqtt || (_deviceType && !device)) {
         return false;
     }
 
@@ -339,7 +338,7 @@ uint16_t HASerializer::calculateTopicEntrySize(
 uint16_t HASerializer::calculateFlagSize(const FlagType flag) const
 {
     const HADevice* device = _deviceType->device();
-    HAMqtt* mqtt = device.mqtt();
+    HAMqtt* mqtt = device->mqtt();
 
     if (flag == WithDevice && device->getSerializer()) {
         const uint16_t deviceLength = device->getSerializer()->calculateSize();
@@ -530,7 +529,7 @@ bool HASerializer::flushTopic(const SerializerEntry* entry) const
 bool HASerializer::flushFlag(const SerializerEntry* entry) const
 {
     const HADevice* device = _deviceType->device();
-    HAMqtt* mqtt = device.mqtt();
+    HAMqtt* mqtt = device->mqtt();
     const FlagType flag = static_cast<FlagType>(entry->subtype);
 
     if (flag == WithDevice && device) {
