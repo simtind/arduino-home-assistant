@@ -41,18 +41,17 @@ HAMqtt::HAMqtt(
     uint8_t maxDevicesTypesNb
 ) : HAMqtt(netClient, device)
 {
-    _device.setMaxDevicesTypesNb(maxDevicesTypesNb);
+    _device->setMaxDevicesTypesNb(maxDevicesTypesNb);
 }
 
  HAMqtt::HAMqtt(
         Client& netClient, 
         HADevice& device,
-    ):
-    _mqtt(new PubSubClient(netClient)),
-    _device(&device)
+    ): _mqtt(new PubSubClient(netClient)),
+      _device(&device)
 {
     _instance = this;
-    _device->setMQtt(this);
+    _device->setMqtt(this);
 }
 #endif
 

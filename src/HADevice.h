@@ -55,7 +55,7 @@ public:
     /**
      * Registers the mqtt instance that this Device is connected to.
      */
-    void setMQtt(HAMqtt * mqtt);
+    void setMqtt(HAMqtt * mqtt);
 
     /**
      * Sets the maximum number of possible device types for this Device.
@@ -215,6 +215,14 @@ public:
         const uint16_t length
     );
 
+    /** 
+     * Get the Mtt instnace for this device.
+     */
+    inline HAMqtt* mqtt() const {
+        return _mqtt;
+    }
+
+
 private:
     /// The unique ID of the device. It can be a memory allocated by HADevice::setUniqueId method.
     const char* _uniqueId = nullptr;
@@ -238,7 +246,7 @@ private:
     bool _extendedUniqueIds = false;
 
     /// Pointers of all registered devices types (array of pointers).
-    std::vector<HABaseDeviceType *> _devicesTypes;
+    std::vector<HABaseDeviceType *> _deviceTypes;
 
     // HA MQTT instance
     HAMqtt * _mqtt = nullptr;

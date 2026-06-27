@@ -9,23 +9,22 @@ HADevice::HADevice(const uint8_t maxDevicesTypesNb) :
     _uniqueId(nullptr),
     _serializer(new HASerializer(nullptr, 6))
 {
-    _devicesTypes.reserve(maxDevicesTypesNb);
+    _deviceTypes.reserve(maxDevicesTypesNb);
 }
 
 HADevice::HADevice(const char* uniqueId, const uint8_t maxDevicesTypesNb) :
     _uniqueId(uniqueId),
     _serializer(new HASerializer(nullptr, 6))
 {
-    _devicesTypes.reserve(maxDevicesTypesNb);
+    _deviceTypes.reserve(maxDevicesTypesNb);
     _serializer->set(AHATOFSTR(HADeviceIdentifiersProperty), _uniqueId);
 }
 
 HADevice::HADevice(const byte* uniqueId, const uint16_t length, const uint8_t maxDevicesTypesNb) :
     _uniqueId(HAUtils::byteArrayToStr(uniqueId, length)),
-    _serializer(new HASerializer(nullptr, 6)),
-
+    _serializer(new HASerializer(nullptr, 6))
 {
-    _devicesTypes.reserve(maxDevicesTypesNb);
+    _deviceTypes.reserve(maxDevicesTypesNb);
     _ownsUniqueId = true;
     _serializer->set(AHATOFSTR(HADeviceIdentifiersProperty), _uniqueId);
 }
@@ -43,7 +42,7 @@ HADevice::~HADevice()
     }
 }
 
-void HADevice::setMQtt(HAMqtt * mqtt)
+void HADevice::setMqtt(HAMqtt * mqtt)
 {
     _mqtt = mqtt;
 }
@@ -167,11 +166,12 @@ void HADevice::publishAvailability() const
 
 void HADevice::addDeviceType(HABaseDeviceType* deviceType)
 {
-    if (_devicesTypes.size() == _devicesTypes.capacity()) {
+    if (_deviceTypes.size() == _deviceTypes.capacity()) {
         return;
     }
 
-    _devicesTypes.push_back(deviceType);
+    _deviceTypes.push_back(deviceType);
+    deviceType.setDevice(*this);
 }
 
 void HADevice::setMaxDevicesTypesNb(uint8_t maxDevicesTypesNb)
