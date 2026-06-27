@@ -101,8 +101,8 @@ public:
      *
      * @param prefix The discovery topics' prefix.
      */
-    inline void setDevice(HADevice * device)
-        { _device = device; }
+    inline void setDevice(HADevice & device)
+        { _device = &device; }
 
     /**
      * Sets the prefix of the Home Assistant discovery topics.
