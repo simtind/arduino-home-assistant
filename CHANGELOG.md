@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0
+**New features:**
+* Update to PubSubClient3, since PubSubClient is no longer updated.
+* Associate `HADeviceTypeBase` management with the `HADevice` class instead of `HAMqtt`.
+* Support multiple `HADevice` and `HAMqtt` instances for platforms that support std::functional.
+
 ## 2.1.0
 
 **New features:**
