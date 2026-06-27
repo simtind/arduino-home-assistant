@@ -58,6 +58,8 @@ public:
     inline static HAMqtt* instance()
         { return _instance; }
 
+    HAMqtt() = default;
+
 #ifdef ARDUINOHA_TEST
     explicit HAMqtt(
         PubSubClientMock* pubSub, 
@@ -385,10 +387,10 @@ private:
     void setState(ConnectionState state);
 
 #ifdef ARDUINOHA_TEST
-    PubSubClientMock* _mqtt;
+    PubSubClientMock* _mqtt = nullptr;
 #else
     /// Instance of the PubSubClient class. It's initialized in the constructor.
-    PubSubClient* _mqtt;
+    PubSubClient* _mqtt = nullptr;
 #endif
 
     /// The callback method that will be called when an MQTT message is received.
