@@ -371,6 +371,15 @@ public:
      */
     void processMessage(const char* topic, const uint8_t* payload, unsigned int length);
 
+    /**
+     * Legacy
+     * Registers the passed device type with the a device handler.
+     *
+     * @note This method is deprecated in favor of device.addDeviceType().
+     * @param deviceType Device type to register.
+     */
+    void addDeviceType(HABaseDeviceType* deviceType)
+
 private:
     /// Interval between MQTT reconnects (milliseconds).
     static const uint16_t ReconnectInterval = 10000;

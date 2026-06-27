@@ -150,7 +150,7 @@ protected:
      * @param uniqueId THe unique ID of the device type assigned via the constructor.
      * @param topic Topic to subscribe (progmem string).
      */
-    static void subscribeTopic(
+    void subscribeTopic(
         const char* uniqueId,
         const __FlashStringHelper* topic
     );

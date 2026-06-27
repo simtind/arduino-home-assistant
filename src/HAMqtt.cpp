@@ -93,7 +93,7 @@ bool HAMqtt::begin(
     _mqtt->setServer(serverIp, serverPort);
 #if HAMQTT_HAS_FUNCTIONAL
     // Support multi-instance HAMQTT by providing separate message callbacks 
-    _mqtt->setCallback(std::bind(&HAMqtt::onMessageReceived, this));
+    _mqtt->setCallback(std::bind(&HAMqtt::processMessage, this));
 #else
     _mqtt->setCallback(onMessageReceived);
 #endif
@@ -139,7 +139,7 @@ bool HAMqtt::begin(
     _mqtt->setServer(serverHostname, serverPort);
 #if HAMQTT_HAS_FUNCTIONAL
     // Support multi-instance HAMQTT by providing separate message callbacks 
-    _mqtt->setCallback(std::bind(&HAMqtt::onMessageReceived, this));
+    _mqtt->setCallback(std::bind(&HAMqtt::processMessage, this));
 #else
     _mqtt->setCallback(onMessageReceived);
 #endif

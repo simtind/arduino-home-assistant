@@ -18,7 +18,8 @@ HABaseDeviceType::HABaseDeviceType(
     const __FlashStringHelper* componentName,
     const char* uniqueId
 ) : 
-    HABaseDeviceType(componentName, uniqueId),
+    _componentName(componentName),
+    _uniqueId(uniqueId),
     _device(&device)
 {
     _device->addDeviceType(this);
