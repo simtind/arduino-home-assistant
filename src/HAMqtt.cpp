@@ -8,39 +8,21 @@
 #include "device-types/HABaseDeviceType.h"
 #include "mocks/PubSubClientMock.h"
 
-#define HAMQTT_INIT \
-    _device(device), \
-    _messageCallback(nullptr), \
-    _connectedCallback(nullptr), \
-    _disconnectedCallback(nullptr), \
-    _stateChangedCallback(nullptr), \
-    _initialized(false), \
-    _discoveryPrefix(DefaultDiscoveryPrefix), \
-    _dataPrefix(DefaultDataPrefix), \
-    _username(nullptr), \
-    _password(nullptr), \
-    _lastConnectionAttemptAt(0), \
-    _devicesTypesNb(0), \
-    _maxDevicesTypesNb(maxDevicesTypesNb), \
-    _devicesTypes(new HABaseDeviceType*[maxDevicesTypesNb]), \
-    _lastWillTopic(nullptr), \
-    _lastWillMessage(nullptr), \
-    _lastWillRetain(false), \
-    _currentState(StateDisconnected)
-
 static const char* DefaultDiscoveryPrefix = "homeassistant";
 static const char* DefaultDataPrefix = "aha";
 
 HAMqtt* HAMqtt::_instance = nullptr;
 
+#if HAMQTT_HAS_FUNCTIONAL
 void onMessageReceived(char* topic, uint8_t* payload, unsigned int length)
 {
-    if (HAMqtt::instance() == nullptr || length > UINT16_MAX) {
+    if (HAMqtt::instance() == nullptr) {
         return;
     }
 
-    HAMqtt::instance()->processMessage(topic, payload, static_cast<uint16_t>(length));
+    HAMqtt::instance()->processMessage(topic, payload, length);
 }
+#endif
 
 #ifdef ARDUINOHA_TEST
 HAMqtt::HAMqtt(
@@ -48,8 +30,7 @@ HAMqtt::HAMqtt(
     HADevice& device,
     uint8_t maxDevicesTypesNb
 ) :
-    _mqtt(pubSub),
-    HAMQTT_INIT
+    _mqtt(pubSub)
 {
     _instance = this;
 }
@@ -58,18 +39,25 @@ HAMqtt::HAMqtt(
     Client& netClient,
     HADevice& device,
     uint8_t maxDevicesTypesNb
-) :
+) : HAMqtt(netClient, device)
+{
+    _device.setMaxDevicesTypesNb(maxDevicesTypesNb);
+}
+
+ HAMqtt::HAMqtt(
+        Client& netClient, 
+        HADevice& device,
+    ):
     _mqtt(new PubSubClient(netClient)),
-    HAMQTT_INIT
+    _device(&device)
 {
     _instance = this;
+    _device->setMQtt(this);
 }
 #endif
 
 HAMqtt::~HAMqtt()
 {
-    delete[] _devicesTypes;
-
     if (_mqtt) {
         delete _mqtt;
     }
@@ -89,7 +77,7 @@ bool HAMqtt::begin(
     ARDUINOHA_DEBUG_PRINT(F(":"))
     ARDUINOHA_DEBUG_PRINTLN(serverPort)
 
-    if (_device.getUniqueId() == nullptr) {
+    if (_device->getUniqueId() == nullptr) {
         ARDUINOHA_DEBUG_PRINTLN(F("AHA: init failed. Missing device unique ID"))
         return false;
     }
@@ -104,7 +92,12 @@ bool HAMqtt::begin(
     _initialized = true;
 
     _mqtt->setServer(serverIp, serverPort);
+#if HAMQTT_HAS_FUNCTIONAL
+    // Support multi-instance HAMQTT by providing separate message callbacks 
+    _mqtt->setCallback(std::bind(&HAMqtt::onMessageReceived, this));
+#else
     _mqtt->setCallback(onMessageReceived);
+#endif
 
     return true;
 }
@@ -130,7 +123,7 @@ bool HAMqtt::begin(
     ARDUINOHA_DEBUG_PRINT(F(":"))
     ARDUINOHA_DEBUG_PRINTLN(serverPort)
 
-    if (_device.getUniqueId() == nullptr) {
+    if (_device->getUniqueId() == nullptr) {
         ARDUINOHA_DEBUG_PRINTLN(F("AHA: init failed. Missing device unique ID"))
         return false;
     }
@@ -145,7 +138,12 @@ bool HAMqtt::begin(
     _initialized = true;
 
     _mqtt->setServer(serverHostname, serverPort);
+#if HAMQTT_HAS_FUNCTIONAL
+    // Support multi-instance HAMQTT by providing separate message callbacks 
+    _mqtt->setCallback(std::bind(&HAMqtt::onMessageReceived, this));
+#else
     _mqtt->setCallback(onMessageReceived);
+#endif
 
     return true;
 }
@@ -207,11 +205,11 @@ bool HAMqtt::setBufferSize(uint16_t size)
 
 void HAMqtt::addDeviceType(HABaseDeviceType* deviceType)
 {
-    if (_devicesTypesNb + 1 > _maxDevicesTypesNb) {
+    if(_device == nullptr)
+    {
         return;
     }
-
-    _devicesTypes[_devicesTypesNb++] = deviceType;
+    _device->addDeviceType(deviceType);
 }
 
 bool HAMqtt::publish(const char* topic, const char* payload, bool retained)
@@ -272,8 +270,13 @@ bool HAMqtt::subscribe(const char* topic)
     return _mqtt->subscribe(topic);
 }
 
-void HAMqtt::processMessage(const char* topic, const uint8_t* payload, uint16_t length)
+void HAMqtt::processMessage(const char* topic, const uint8_t* payload, unsigned int length)
 {
+    if (length > UINT16_MAX)
+    {
+        return;
+    }
+    
     ARDUINOHA_DEBUG_PRINT(F("AHA: received call "))
     ARDUINOHA_DEBUG_PRINT(topic)
     ARDUINOHA_DEBUG_PRINT(F(", len: "))
@@ -283,9 +286,7 @@ void HAMqtt::processMessage(const char* topic, const uint8_t* payload, uint16_t 
         _messageCallback(topic, payload, length);
     }
 
-    for (uint8_t i = 0; i < _devicesTypesNb; i++) {
-        _devicesTypes[i]->onMqttMessage(topic, payload, length);
-    }
+    _device->onMqttMessage(topic, payload, length);
 }
 
 void HAMqtt::connectToServer()
@@ -299,10 +300,10 @@ void HAMqtt::connectToServer()
     setState(StateConnecting);
 
     ARDUINOHA_DEBUG_PRINT(F("AHA: MQTT connecting, client ID: "))
-    ARDUINOHA_DEBUG_PRINTLN(_device.getUniqueId())
+    ARDUINOHA_DEBUG_PRINTLN(_device->getUniqueId())
 
     _mqtt->connect(
-        _device.getUniqueId(),
+        _device->getUniqueId(),
         _username,
         _password,
         _lastWillTopic,
@@ -325,11 +326,8 @@ void HAMqtt::onConnectedLogic()
         _connectedCallback();
     }
 
-    _device.publishAvailability();
-
-    for (uint8_t i = 0; i < _devicesTypesNb; i++) {
-        _devicesTypes[i]->onMqttConnected();
-    }
+    _device->publishAvailability();
+    _device->onMqttConnected();
 }
 
 void HAMqtt::setState(ConnectionState state)

@@ -4,6 +4,17 @@
 #include <Arduino.h>
 
 class HASerializer;
+class HAMqtt;
+class HABaseDeviceType;
+
+#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
+#define HADEVICE_DEFAULT_DEVICE_TYPES_LIMIT 6
+#else
+#define HADEVICE_DEFAULT_DEVICE_TYPES_LIMIT 24
+#endif
+
+/* For backwards compatibility */
+#define HAMQTT_DEFAULT_DEVICES_LIMIT HADEVICE_DEFAULT_DEVICE_TYPES_LIMIT
 
 /**
  * This class represents your device that's going to be registered in the Home Assistant devices registry.
@@ -17,7 +28,7 @@ public:
      *
      * @note You will need to set the ID using HADevice::setUniqueId method. Otherwise none of the entities will work.
      */
-    HADevice();
+    HADevice(const uint8_t maxDevicesTypesNb = HADEVICE_DEFAULT_DEVICE_TYPES_LIMIT);
 
     /**
      * Constructs HADevice with the given unique ID (string).
@@ -25,7 +36,7 @@ public:
      *
      * @param uniqueId String with the null terminator.
      */
-    HADevice(const char* uniqueId);
+    HADevice(const char* uniqueId, const uint8_t maxDevicesTypesNb = HADEVICE_DEFAULT_DEVICE_TYPES_LIMIT);
 
     /**
      * Constructs HADevice using the given byte array as the unique ID.
@@ -34,12 +45,22 @@ public:
      * @param uniqueId Bytes array that's going to be converted into the string.
      * @param length Number of bytes in the array.
      */
-    HADevice(const byte* uniqueId, const uint16_t length);
+    HADevice(const byte* uniqueId, const uint16_t length, const uint8_t maxDevicesTypesNb = HADEVICE_DEFAULT_DEVICE_TYPES_LIMIT);
 
     /**
      * Deletes HASerializer and the availability topic if the shared availability was enabled.
      */
     ~HADevice();
+
+    /**
+     * Registers the mqtt instance that this Device is connected to.
+     */
+    void setMQtt(HAMqtt * mqtt);
+
+    /**
+     * Sets the maximum number of possible device types for this Device.
+     */
+    void setMaxDevicesTypesNb(uint8_t maxDevicesTypesNb);
 
     /**
      * Returns pointer to the unique ID. It can be nullptr if the device has no ID assigned.
@@ -157,27 +178,61 @@ public:
      */
     void publishAvailability() const;
 
+    /**
+     * Adds a new device's type to the Device.
+     *
+     * @note The Device class doesn't take ownership of the given pointer.
+     * @param deviceType Instance of the device's type (HASwitch, HABinarySensor, etc.).
+     */
+    void addDeviceType(HABaseDeviceType* deviceType);
+
+    /**
+     * This method is called each time the MQTT connection is acquired.
+     * It calls onMqttConnected() for each registered device type.
+     */
+    void onMqttConnected();
+
+    /**
+     * This method is called each time the device receives a MQTT message.
+     * It calls onMqttMessage() for each registered device type.
+     *
+     * @param topic The topic on which the message was produced.
+     * @param payload The payload of the message. It can be nullptr.
+     * @param length The length of the payload.
+     */
+    void onMqttMessage(
+        const char* topic,
+        const uint8_t* payload,
+        const uint16_t length
+    );
+
 private:
     /// The unique ID of the device. It can be a memory allocated by HADevice::setUniqueId method.
-    const char* _uniqueId;
+    const char* _uniqueId = nullptr;
 
     /// Specifies whether HADevice class owns the _uniqueId pointer.
-    bool _ownsUniqueId;
+    bool _ownsUniqueId = false;;
 
     /// JSON serializer of the HADevice class. It's allocated in the constructor.
-    HASerializer* _serializer;
+    HASerializer* _serializer = nullptr;
 
     /// The availability topic allocated by HADevice::enableSharedAvailability method.
-    char* _availabilityTopic;
+    char* _availabilityTopic = nullptr;
 
     /// Specifies whether the shared availability is enabled.
-    bool _sharedAvailability;
+    bool _sharedAvailability = false;
 
     /// Specifies whether the device is available (online / offline).
-    bool _available;
+    bool _available = true;
 
     /// Specifies whether extended unique IDs feature is enabled.
-    bool _extendedUniqueIds;
+    bool _extendedUniqueIds = false;
+
+    /// Pointers of all registered devices types (array of pointers).
+    std::vector<HABaseDeviceType *> _devicesTypes;
+
+    // HA MQTT instance
+    HAMqtt * _mqtt = nullptr;
 };
 
 #endif

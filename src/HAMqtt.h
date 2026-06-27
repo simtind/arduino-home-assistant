@@ -6,6 +6,12 @@
 #include <IPAddress.h>
 #include "ArduinoHADefines.h"
 
+#if defined(__has_include) && __has_include(<functional>) && !defined(NOFUNCTIONAL)
+#define HAMQTT_SUPPORT_MULTIPLE 1
+#else
+#define HAMQTT_SUPPORT_MULTIPLE 0
+#endif
+
 #define HAMQTT_CALLBACK(name) void (*name)()
 #define HAMQTT_STATE_CALLBACK(name) void (*name)(ConnectionState state)
 #define HAMQTT_MESSAGE_CALLBACK(name) void (*name)(const char* topic, const uint8_t* payload, uint16_t length)
@@ -17,12 +23,6 @@ class PubSubClientMock;
 class PubSubClient;
 #endif
 
-#if defined(__AVR_ATmega328P__) || defined(__AVR_ATmega168__)
-#define HAMQTT_DEFAULT_DEVICES_LIMIT 6
-#else
-#define HAMQTT_DEFAULT_DEVICES_LIMIT 24
-#endif
-
 class HADevice;
 class HABaseDeviceType;
 
@@ -32,7 +32,7 @@ using namespace arduino;
 
 /**
  * This class is a wrapper for the PubSub API.
- * It's a central point of the library where instances of all device types are stored.
+ * It's a central point of the library where instances of all devices are stored.
  */
 class HAMqtt
 {
@@ -60,14 +60,23 @@ public:
 
 #ifdef ARDUINOHA_TEST
     explicit HAMqtt(
-        PubSubClientMock* pubSub,
-        HADevice& device,
-        const uint8_t maxDevicesTypesNb = HAMQTT_DEFAULT_DEVICES_LIMIT
+        PubSubClientMock* pubSub, 
+        HADevice& device
     );
 #else
     /**
      * Creates a new instance of the HAMqtt class.
-     * Please note that only one instance of the class can be initialized at the same time.
+     *
+     * @param netClient The EthernetClient or WiFiClient that's going to be used for the network communication.
+     * @param device An instance of the HADevice class representing your device.
+     */
+    explicit HAMqtt(
+        Client& netClient, 
+        HADevice& device
+    );
+    /**
+     * Legacy Constructor
+     * Creates a new instance of the HAMqtt class and initializes the global singleton for compatibility with legacy applications.
      *
      * @param netClient The EthernetClient or WiFiClient that's going to be used for the network communication.
      * @param device An instance of the HADevice class representing your device.
@@ -76,7 +85,7 @@ public:
     explicit HAMqtt(
         Client& netClient,
         HADevice& device,
-        const uint8_t maxDevicesTypesNb = HAMQTT_DEFAULT_DEVICES_LIMIT
+        uint8_t maxDevicesTypesNb
     );
 #endif
 
@@ -118,14 +127,7 @@ public:
         { return _dataPrefix; }
 
     /**
-     * Returns instance of the device assigned to the HAMqtt class.
-     * It's the same object (pointer) that was passed to the HAMqtt constructor.
-     */
-    inline HADevice const* getDevice() const
-        { return &_device; }
-
-    /**
-     * Registers a new callback method that will be called when the device receives an MQTT message.
+     * Registers a new callback method that will be called when the system receives an MQTT message.
      * Please note that the callback is also fired by internal MQTT messages used by the library.
      * You should always verify the topic of the received message.
      *
@@ -263,16 +265,6 @@ public:
     bool setBufferSize(uint16_t size);
 
     /**
-     * Adds a new device's type to the MQTT.
-     * Each time the connection with MQTT broker is acquired, the HAMqtt class
-     * calls "onMqttConnected" method in all devices' types instances.
-     *
-     * @note The HAMqtt class doesn't take ownership of the given pointer.
-     * @param deviceType Instance of the device's type (HASwitch, HABinarySensor, etc.).
-     */
-    void addDeviceType(HABaseDeviceType* deviceType);
-
-    /**
      * Publishes the MQTT message with given topic and payload.
      * Message won't be published if the connection with the MQTT broker is not established.
      * In this case method returns false.
@@ -341,8 +333,8 @@ public:
     bool subscribe(const char* topic);
 
     /**
-     * Enables the last will message that will be produced when the device disconnects from the broker.
-     * If you want to change availability of the device in Home Assistant panel
+     * Enables the last will message that will be produced when the system disconnects from the broker.
+     * If you want to change availability of a device in the Home Assistant panel
      * please use enableLastWill() method from the HADevice class instead.
      *
      * @param lastWillTopic The topic to publish.
@@ -367,15 +359,7 @@ public:
      * @param payload Content of the message.
      * @param length Length of the message.
      */
-    void processMessage(const char* topic, const uint8_t* payload, uint16_t length);
-
-#ifdef ARDUINOHA_TEST
-    inline uint8_t getDevicesTypesNb() const
-        { return _devicesTypesNb; }
-
-    inline HABaseDeviceType** getDevicesTypes() const
-        { return _devicesTypes; }
-#endif
+    void processMessage(const char* topic, const uint8_t* payload, unsigned int length);
 
 private:
     /// Interval between MQTT reconnects (milliseconds).
@@ -407,59 +391,50 @@ private:
     PubSubClient* _mqtt;
 #endif
 
-    /// Instance of the HADevice passed to the constructor.
-    const HADevice& _device;
-
     /// The callback method that will be called when an MQTT message is received.
-    HAMQTT_MESSAGE_CALLBACK(_messageCallback);
+    HAMQTT_MESSAGE_CALLBACK(_messageCallback) = nullptr;
 
     /// The callback method that will be called when the MQTT connection is acquired.
-    HAMQTT_CALLBACK(_connectedCallback);
+    HAMQTT_CALLBACK(_connectedCallback) = nullptr;
 
     /// The callback method that will be called when the MQTT connection is lost.
-    HAMQTT_CALLBACK(_disconnectedCallback);
+    HAMQTT_CALLBACK(_disconnectedCallback) = nullptr;
 
     /// The callback method that will be called when the MQTT connection state changes.
-    HAMQTT_STATE_CALLBACK(_stateChangedCallback);
+    HAMQTT_STATE_CALLBACK(_stateChangedCallback) = nullptr;
 
     /// Specifies whether the HAMqtt::begin method was ever called.
-    bool _initialized;
+    bool _initialized = false;
 
     /// Teh discovery prefix that's used for the configuration messages.
-    const char* _discoveryPrefix;
+    const char* _discoveryPrefix = nullptr;
 
     /// The data prefix that's used for publishing data messages.
-    const char* _dataPrefix;
+    const char* _dataPrefix = nullptr;
 
     /// The username used for the authentication. It's set in the HAMqtt::begin method.
-    const char* _username;
+    const char* _username = nullptr;
 
     /// The password used for the authentication. It's set in the HAMqtt::begin method.
-    const char* _password;
+    const char* _password = nullptr;
 
     /// Time of the last connection attemps (milliseconds since boot).
-    uint32_t _lastConnectionAttemptAt;
-
-    /// The amount of registered devices types.
-    uint8_t _devicesTypesNb;
-
-    /// The maximum amount of devices types that can be registered.
-    uint8_t _maxDevicesTypesNb;
-
-    /// Pointers of all registered devices types (array of pointers).
-    HABaseDeviceType** _devicesTypes;
+    uint32_t _lastConnectionAttemptAt = 0;
 
     /// The last will topic set by HAMqtt::setLastWill
-    const char* _lastWillTopic;
+    const char* _lastWillTopic = nullptr;
 
     /// The last will message set by HAMqtt::setLastWill
-    const char* _lastWillMessage;
+    const char* _lastWillMessage = nullptr;
 
     /// The last will retain set by HAMqtt::setLastWill
-    bool _lastWillRetain;
+    bool _lastWillRetain = false;
 
     /// The last known state of the MQTT connection.
-    ConnectionState _currentState;
+    ConnectionState _currentState = StateDisconnected;
+
+    // The device that this MQTT instance serves
+    HADevice * _device = nullptr;
 };
 
 #endif

@@ -4,32 +4,28 @@
 #include "utils/HAUtils.h"
 #include "utils/HASerializer.h"
 
-#define HADEVICE_INIT \
-    _ownsUniqueId(false), \
-    _serializer(new HASerializer(nullptr, 6)), \
-    _availabilityTopic(nullptr), \
-    _sharedAvailability(false), \
-    _available(true), \
-    _extendedUniqueIds(false)
 
-HADevice::HADevice() :
+HADevice::HADevice(const uint8_t maxDevicesTypesNb) :
     _uniqueId(nullptr),
-    HADEVICE_INIT
+    _serializer(new HASerializer(nullptr, 6))
 {
-
+    _devicesTypes.reserve(maxDevicesTypesNb);
 }
 
-HADevice::HADevice(const char* uniqueId) :
+HADevice::HADevice(const char* uniqueId, const uint8_t maxDevicesTypesNb) :
     _uniqueId(uniqueId),
-    HADEVICE_INIT
+    _serializer(new HASerializer(nullptr, 6))
 {
+    _devicesTypes.reserve(maxDevicesTypesNb);
     _serializer->set(AHATOFSTR(HADeviceIdentifiersProperty), _uniqueId);
 }
 
-HADevice::HADevice(const byte* uniqueId, const uint16_t length) :
+HADevice::HADevice(const byte* uniqueId, const uint16_t length, const uint8_t maxDevicesTypesNb) :
     _uniqueId(HAUtils::byteArrayToStr(uniqueId, length)),
-    HADEVICE_INIT
+    _serializer(new HASerializer(nullptr, 6)),
+
 {
+    _devicesTypes.reserve(maxDevicesTypesNb);
     _ownsUniqueId = true;
     _serializer->set(AHATOFSTR(HADeviceIdentifiersProperty), _uniqueId);
 }
@@ -45,6 +41,11 @@ HADevice::~HADevice()
     if (_ownsUniqueId) {
         delete[] _uniqueId;
     }
+}
+
+void HADevice::setMQtt(HAMqtt * mqtt)
+{
+    _mqtt = mqtt;
 }
 
 bool HADevice::setUniqueId(const byte* uniqueId, const uint16_t length)
@@ -126,12 +127,11 @@ bool HADevice::enableSharedAvailability()
 
 void HADevice::enableLastWill()
 {
-    HAMqtt* mqtt = HAMqtt::instance();
-    if (!mqtt || !_availabilityTopic) {
+    if (!_mqtt || !_availabilityTopic) {
         return;
     }
 
-    mqtt->setLastWill(
+    _mqtt->setLastWill(
         _availabilityTopic,
         "offline",
         true
@@ -140,16 +140,50 @@ void HADevice::enableLastWill()
 
 void HADevice::publishAvailability() const
 {
-    HAMqtt* mqtt = HAMqtt::instance();
-    if (!_availabilityTopic || !mqtt) {
+    if (!_availabilityTopic || !_mqtt) {
         return;
     }
 
     const char* payload = _available ? HAOnline : HAOffline;
     const uint16_t length = strlen_P(payload);
 
-    if (mqtt->beginPublish(_availabilityTopic, length, true)) {
-        mqtt->writePayload(AHATOFSTR(payload));
-        mqtt->endPublish();
+    if (_mqtt->beginPublish(_availabilityTopic, length, true)) {
+        _mqtt->writePayload(AHATOFSTR(payload));
+        _mqtt->endPublish();
+    }
+}
+
+
+void HADevice::addDeviceType(HABaseDeviceType* deviceType)
+{
+    if (_devicesTypes.size() == _devicesTypes.capacity()) {
+        return;
+    }
+
+    _devicesTypes.push_back(deviceType);
+}
+
+void HADevice::setMaxDevicesTypesNb(uint8_t maxDevicesTypesNb)
+{
+    _deviceTypes.reserve(maxDevicesTypesNb);
+}
+
+void HADevice::onMqttConnected()
+{
+    for (HABaseDeviceType * type : _deviceTypes)
+    {
+        type->onMqttConnected();
+    }
+}
+
+void HADevice::onMqttMessage(
+    const char* topic,
+    const uint8_t* payload,
+    const uint16_t length
+)
+{
+    for (HABaseDeviceType * type : _deviceTypes)
+    {
+        type->onMqttMessage(topic, payload, length);
     }
 }
