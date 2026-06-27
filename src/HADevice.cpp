@@ -1,6 +1,7 @@
 #include "ArduinoHADefines.h"
 #include "HADevice.h"
 #include "HAMqtt.h"
+#include "device-types/HABaseDeviceType.h"
 #include "utils/HAUtils.h"
 #include "utils/HASerializer.h"
 
@@ -171,7 +172,7 @@ void HADevice::addDeviceType(HABaseDeviceType* deviceType)
     }
 
     _deviceTypes.push_back(deviceType);
-    deviceType.setDevice(*this);
+    deviceType->setDevice(*this);
 }
 
 void HADevice::setMaxDevicesTypesNb(uint8_t maxDevicesTypesNb)

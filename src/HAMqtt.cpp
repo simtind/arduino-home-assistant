@@ -46,7 +46,7 @@ HAMqtt::HAMqtt(
 
  HAMqtt::HAMqtt(
         Client& netClient, 
-        HADevice& device,
+        HADevice& device
     ): _mqtt(new PubSubClient(netClient)),
       _device(&device)
 {

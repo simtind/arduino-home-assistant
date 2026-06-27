@@ -107,10 +107,9 @@ void HABaseDeviceType::publishConfig()
 
 void HABaseDeviceType::publishAvailability()
 {
-    const HADevice* device = _device->mqtt()->getDevice();
     if (
-        !device ||
-        device->isSharedAvailabilityEnabled() ||
+        !_device ||
+        _device->isSharedAvailabilityEnabled() ||
         !isAvailabilityConfigured()
     ) {
         return;
