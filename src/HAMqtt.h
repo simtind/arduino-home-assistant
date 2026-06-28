@@ -378,7 +378,7 @@ public:
      * @note This method is deprecated in favor of device.addDeviceType().
      * @param deviceType Device type to register.
      */
-    void addDeviceType(HABaseDeviceType* deviceType)
+    void addDeviceType(HABaseDeviceType* deviceType);
 
 private:
     /// Interval between MQTT reconnects (milliseconds).

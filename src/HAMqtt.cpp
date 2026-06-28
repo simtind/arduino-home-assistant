@@ -13,7 +13,7 @@ static const char* DefaultDataPrefix = "aha";
 
 HAMqtt* HAMqtt::_instance = nullptr;
 
-#if HAMQTT_HAS_FUNCTIONAL
+#if !HAMQTT_SUPPORT_MULTIPLE
 void onMessageReceived(char* topic, uint8_t* payload, unsigned int length)
 {
     if (HAMqtt::instance() == nullptr) {
@@ -91,9 +91,10 @@ bool HAMqtt::begin(
     _initialized = true;
 
     _mqtt->setServer(serverIp, serverPort);
-#if HAMQTT_HAS_FUNCTIONAL
+#if HAMQTT_SUPPORT_MULTIPLE
+    using namespace std::placeholders;  // for _1, _2, _3...
     // Support multi-instance HAMQTT by providing separate message callbacks 
-    _mqtt->setCallback(std::bind(&HAMqtt::processMessage, this));
+    _mqtt->setCallback(std::bind(&HAMqtt::processMessage, this, _1, _2, _3));
 #else
     _mqtt->setCallback(onMessageReceived);
 #endif
@@ -138,8 +139,9 @@ bool HAMqtt::begin(
 
     _mqtt->setServer(serverHostname, serverPort);
 #if HAMQTT_HAS_FUNCTIONAL
+    using namespace std::placeholders;  // for _1, _2, _3...
     // Support multi-instance HAMQTT by providing separate message callbacks 
-    _mqtt->setCallback(std::bind(&HAMqtt::processMessage, this));
+    _mqtt->setCallback(std::bind(&HAMqtt::processMessage, this, _1, _2, _3));
 #else
     _mqtt->setCallback(onMessageReceived);
 #endif
