@@ -69,10 +69,12 @@ public:
      * Calculates the size of a configuration topic for the given component and object ID.
      * The configuration topic has structure as follows: `[discovery prefix]/[component]/[device ID]_[objectId]/config`
      *
+     * @param device The device that the component is attached to.
      * @param component The name of the HA component (e.g. `binary_sensor`).
      * @param objectId The unique ID of a device type that's going to publish the config.
      */
     static uint16_t calculateConfigTopicLength(
+        const HADevice* device,
         const __FlashStringHelper* component,
         const char* objectId
     );
@@ -81,11 +83,13 @@ public:
      * Generates the configuration topic for the given component and object ID.
      * The topic will be stored in the `output` variable.
      *
+     * @param device The device that the component is attached to.
      * @param output Buffer where the topic will be written.
      * @param component The name of the HA component (e.g. `binary_sensor`).
      * @param objectId The unique ID of a device type that's going to publish the config.
      */
     static bool generateConfigTopic(
+        const HADevice* device,
         char* output,
         const __FlashStringHelper* component,
         const char* objectId
@@ -95,10 +99,12 @@ public:
      * Calculates the size of the given data topic for the given objectId.
      * The data topic has structure as follows: `[data prefix]/[device ID]_[objectId]/[topic]`
      *
+     * @param device The device that the component is attached to.
      * @param objectId The unique ID of a device type that's going to publish the data.
      * @param topic The topic name (progmem string).
      */
     static uint16_t calculateDataTopicLength(
+        const HADevice* device,
         const char* objectId,
         const __FlashStringHelper* topic
     );
@@ -107,11 +113,13 @@ public:
      * Generates the data topic for the given object ID.
      * The topic will be stored in the `output` variable.
      *
+     * @param device The device that the component is attached to.
      * @param output Buffer where the topic will be written.
      * @param objectId The unique ID of a device type that's going to publish the data.
      * @param topic The topic name (progmem string).
      */
     static bool generateDataTopic(
+        const HADevice* device,
         char* output,
         const char* objectId,
         const __FlashStringHelper* topic
@@ -122,11 +130,13 @@ public:
      * using the given objectId and topicP.
      * This method can be used to check if the received message matches some data topic.
      *
+     * @param device The device that the component is attached to.
      * @param actualTopic The actual topic to compare.
      * @param objectId The unique ID of a device type that may be the owner of the topic.
      * @param topic The topic name (progmem string).
      */
     static bool compareDataTopics(
+        const HADevice* device,
         const char* actualTopic,
         const char* objectId,
         const __FlashStringHelper* topic

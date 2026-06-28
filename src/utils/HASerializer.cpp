@@ -14,11 +14,11 @@
 #include "../device-types/HABaseDeviceType.h"
 
 uint16_t HASerializer::calculateConfigTopicLength(
+    const HADevice* device,
     const __FlashStringHelper* componentName,
     const char* objectId
 )
 {
-    const HADevice* device = _deviceType->device();
     if (!device || !componentName || !objectId)
     {
         return 0;
@@ -38,13 +38,12 @@ uint16_t HASerializer::calculateConfigTopicLength(
 }
 
 bool HASerializer::generateConfigTopic(
-    HADevice * device,
+    const HADevice* device,
     char* output,
     const __FlashStringHelper* componentName,
     const char* objectId
 )
 {
-    const HADevice* device = _deviceType->device();
     if (!device || !output || !componentName || !objectId)
     {
         return false;
@@ -72,11 +71,11 @@ bool HASerializer::generateConfigTopic(
 }
 
 uint16_t HASerializer::calculateDataTopicLength(
+    const HADevice* device,
     const char* objectId,
     const __FlashStringHelper* topic
 )
 {
-    const HADevice* device = _deviceType->device();
     if (!device || !topic)
     {
         return 0;
@@ -100,12 +99,12 @@ uint16_t HASerializer::calculateDataTopicLength(
 }
 
 bool HASerializer::generateDataTopic(
+    const HADevice* device,
     char* output,
     const char* objectId,
     const __FlashStringHelper* topic
 )
 {
-    const HADevice* device = _deviceType->device();
     if (!device || !output || !topic)
     {
         return false;
@@ -132,6 +131,7 @@ bool HASerializer::generateDataTopic(
 }
 
 bool HASerializer::compareDataTopics(
+    const HADevice* device,
     const char* actualTopic,
     const char* objectId,
     const __FlashStringHelper* topic
@@ -141,13 +141,13 @@ bool HASerializer::compareDataTopics(
         return false;
     }
 
-    const uint16_t topicLength = calculateDataTopicLength(objectId, topic);
+    const uint16_t topicLength = calculateDataTopicLength(device, objectId, topic);
     if (topicLength == 0) {
         return false;
     }
 
     char expectedTopic[topicLength];
-    if (!generateDataTopic(expectedTopic, objectId, topic)) {
+    if (!generateDataTopic(device, expectedTopic, objectId, topic)) {
         return false;
     }
 

@@ -66,6 +66,7 @@ void HAScene::onMqttMessage(
     (void)length;
 
     if (_commandCallback && HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HACommandTopic)

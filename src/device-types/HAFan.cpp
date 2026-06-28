@@ -132,12 +132,14 @@ void HAFan::onMqttMessage(
 )
 {
     if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HACommandTopic)
     )) {
         handleStateCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HAPercentageCommandTopic)

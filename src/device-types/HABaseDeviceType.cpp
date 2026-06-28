@@ -37,6 +37,7 @@ void HABaseDeviceType::subscribeTopic(
 )
 {
     const uint16_t topicLength = HASerializer::calculateDataTopicLength(
+        device(),
         uniqueId,
         topic
     );
@@ -46,6 +47,7 @@ void HABaseDeviceType::subscribeTopic(
 
     char fullTopic[topicLength];
     if (!HASerializer::generateDataTopic(
+        device(),
         fullTopic,
         uniqueId,
         topic
@@ -84,6 +86,7 @@ void HABaseDeviceType::publishConfig()
     }
 
     const uint16_t topicLength = HASerializer::calculateConfigTopicLength(
+        device(),
         componentName(),
         uniqueId()
     );
@@ -92,6 +95,7 @@ void HABaseDeviceType::publishConfig()
     if (topicLength > 0 && dataLength > 0) {
         char topic[topicLength];
         HASerializer::generateConfigTopic(
+            device(),
             topic,
             componentName(),
             uniqueId()
@@ -175,6 +179,7 @@ bool HABaseDeviceType::publishOnDataTopic(
     }
 
     const uint16_t topicLength = HASerializer::calculateDataTopicLength(
+        device(),
         uniqueId(),
         topic
     );
@@ -184,6 +189,7 @@ bool HABaseDeviceType::publishOnDataTopic(
 
     char fullTopic[topicLength];
     if (!HASerializer::generateDataTopic(
+        device(),
         fullTopic,
         uniqueId(),
         topic

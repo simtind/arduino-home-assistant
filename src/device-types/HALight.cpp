@@ -233,18 +233,21 @@ void HALight::onMqttMessage(
 )
 {
     if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HACommandTopic)
     )) {
         handleStateCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HABrightnessCommandTopic)
     )) {
         handleBrightnessCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HAColorTemperatureCommandTopic)
@@ -252,6 +255,7 @@ void HALight::onMqttMessage(
         handleColorTemperatureCommand(payload, length);
     } else if (
         HASerializer::compareDataTopics(
+            device(),
             topic,
             uniqueId(),
             AHATOFSTR(HARGBCommandTopic)

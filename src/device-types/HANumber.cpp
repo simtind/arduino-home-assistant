@@ -129,6 +129,7 @@ void HANumber::onMqttMessage(
 )
 {
     if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HACommandTopic)

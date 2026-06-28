@@ -91,6 +91,7 @@ void HASwitch::onMqttMessage(
     (void)payload;
 
     if (_commandCallback && HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HACommandTopic)

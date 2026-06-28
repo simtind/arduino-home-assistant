@@ -115,6 +115,7 @@ bool HADevice::enableSharedAvailability()
     }
 
     const uint16_t topicLength = HASerializer::calculateDataTopicLength(
+        this,
         nullptr,
         AHATOFSTR(HAAvailabilityTopic)
     );
@@ -125,6 +126,7 @@ bool HADevice::enableSharedAvailability()
     _availabilityTopic = new char[topicLength];
 
     if (HASerializer::generateDataTopic(
+        this,
         _availabilityTopic,
         nullptr,
         AHATOFSTR(HAAvailabilityTopic)

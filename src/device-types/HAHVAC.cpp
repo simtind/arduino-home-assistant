@@ -405,36 +405,42 @@ void HAHVAC::onMqttMessage(
 )
 {
     if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HAAuxCommandTopic)
     )) {
         handleAuxStateCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HAPowerCommandTopic)
     )) {
         handlePowerCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HAFanModeCommandTopic)
     )) {
         handleFanModeCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HASwingModeCommandTopic)
     )) {
         handleSwingModeCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HAModeCommandTopic)
     )) {
         handleModeCommand(payload, length);
     } else if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HATemperatureCommandTopic)

@@ -111,6 +111,7 @@ void HACover::onMqttMessage(
 )
 {
     if (HASerializer::compareDataTopics(
+        device(),
         topic,
         uniqueId(),
         AHATOFSTR(HACommandTopic)
