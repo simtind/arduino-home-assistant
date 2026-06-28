@@ -8,6 +8,7 @@
 #include "HASerializerArray.h"
 
 class HAMqtt;
+class HADevice;
 class HABaseDeviceType;
 
 /**

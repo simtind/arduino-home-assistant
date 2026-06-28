@@ -327,6 +327,7 @@ uint16_t HASerializer::calculateTopicEntrySize(
         }
 
         size += calculateDataTopicLength(
+            _deviceType->device(),
             _deviceType->uniqueId(),
             entry->property
         ) - 1; // exclude null terminator
@@ -410,7 +411,7 @@ uint16_t HASerializer::calculatePropertyValueSize(
 
 bool HASerializer::flushEntry(const SerializerEntry* entry) const
 {
-    HAMqtt* mqtt = _deviceType->device().mqtt();
+    HAMqtt* mqtt = _deviceType->device()->mqtt();
 
     switch (entry->type) {
     case PropertyEntryType: {
@@ -434,7 +435,7 @@ bool HASerializer::flushEntry(const SerializerEntry* entry) const
 
 bool HASerializer::flushEntryValue(const SerializerEntry* entry) const
 {
-    HAMqtt* mqtt = _deviceType->device().mqtt();
+    HAMqtt* mqtt = _deviceType->device()->mqtt();
 
     switch (entry->subtype) {
     case ConstCharPropertyValue:
@@ -490,7 +491,7 @@ bool HASerializer::flushEntryValue(const SerializerEntry* entry) const
 
 bool HASerializer::flushTopic(const SerializerEntry* entry) const
 {
-    HAMqtt* mqtt = _deviceType->device().mqtt();
+    HAMqtt* mqtt = _deviceType->device()->mqtt();
 
     // property name
     mqtt->writePayload(AHATOFSTR(HASerializerJsonPropertyPrefix));
@@ -505,6 +506,7 @@ bool HASerializer::flushTopic(const SerializerEntry* entry) const
         mqtt->writePayload(topic, strlen(topic));
     } else {
         const uint16_t length = calculateDataTopicLength(
+            _deviceType->device(),
             _deviceType->uniqueId(),
             entry->property
         );
@@ -514,6 +516,7 @@ bool HASerializer::flushTopic(const SerializerEntry* entry) const
 
         char topic[length];
         generateDataTopic(
+            _deviceType->device(),
             topic,
             _deviceType->uniqueId(),
             entry->property

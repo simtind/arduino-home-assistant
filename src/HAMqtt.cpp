@@ -138,7 +138,7 @@ bool HAMqtt::begin(
     _initialized = true;
 
     _mqtt->setServer(serverHostname, serverPort);
-#if HAMQTT_HAS_FUNCTIONAL
+#if HAMQTT_SUPPORT_MULTIPLE
     using namespace std::placeholders;  // for _1, _2, _3...
     // Support multi-instance HAMQTT by providing separate message callbacks 
     _mqtt->setCallback(std::bind(&HAMqtt::processMessage, this, _1, _2, _3));
